@@ -1,4 +1,4 @@
-name: ci
+name: 持续集成
 
 on:
   push:
@@ -9,19 +9,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: 安装 Go
         uses: actions/setup-go@v5
         with:
           go-version: "stable"
 
-      - name: Vet
+      - name: 静态检查
         run: go vet ./...
 
-      - name: Test
+      - name: 运行测试
         run: go test ./...
 
-      - name: Build
+      - name: 构建
         run: go build -o /dev/null .

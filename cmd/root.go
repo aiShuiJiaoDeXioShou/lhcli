@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// rootCmd is the base command for lhcli.
+// rootCmd 是 lhcli 的根命令。
 var rootCmd = &cobra.Command{
 	Use:   "lhcli",
 	Short: "lhcli is a custom Go CLI tool",
@@ -19,7 +19,7 @@ project layout, flag handling and build-time version injection.`,
 	SilenceErrors: true,
 }
 
-// Execute runs the root command and exits with a non-zero status on error.
+// Execute 执行根命令，出错时以非零状态码退出。
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
@@ -28,6 +28,6 @@ func Execute() {
 }
 
 func init() {
-	// Uncomment to disable the generated shell completion command.
+	// 取消注释可禁用自动生成的 shell 补全命令。
 	// rootCmd.CompletionOptions.DisableDefaultCmd = true
 }

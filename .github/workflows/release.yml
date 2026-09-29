@@ -1,4 +1,4 @@
-name: release
+name: 发布
 
 on:
   push:
@@ -12,17 +12,17 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 检出代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Go
+      - name: 安装 Go
         uses: actions/setup-go@v5
         with:
           go-version: "stable"
 
-      - name: Run GoReleaser
+      - name: 运行 GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"

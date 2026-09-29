@@ -1,14 +1,14 @@
-// Package buildinfo holds build-time metadata injected via -ldflags.
+// Package buildinfo 保存通过 -ldflags 在构建期注入的元数据。
 package buildinfo
 
-// These values are overridden at build time, e.g.
+// 以下变量的值会在构建时被覆盖，例如：
 //
 //	go build -ldflags "-X github.com/aiShuiJiaoDeXioShou/lhcli/internal/buildinfo.Version=v1.0.0"
 var (
-	// Version is the semantic version of the build.
+	// Version 是本次构建的语义化版本号。
 	Version = "dev"
-	// Commit is the git commit the binary was built from.
+	// Commit 是构建该二进制所对应的 git 提交。
 	Commit = "none"
-	// Date is the build timestamp.
+	// Date 是构建时间戳。
 	Date = "unknown"
 )

@@ -1,14 +1,14 @@
-# Binaries
+# 二进制文件
 /lhcli
 /lhcli.exe
 /dist/
 
-# Test / coverage artifacts
+# 测试/覆盖率产物
 *.test
 *.out
 coverage.txt
 
-# Editor / OS noise
+# 编辑器与系统无关文件
 .DS_Store
 .idea/
 .vscode/

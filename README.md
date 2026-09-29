@@ -1,42 +1,41 @@
 # lhcli
 
-A custom command-line tool written in Go.
+使用 Go 编写的自定义命令行工具。
 
-## Installation
+## 安装
 
-### 1. Go install (requires Go toolchain)
+### 1. 通过 go install（需要 Go 工具链）
 
 ```bash
 go install github.com/aiShuiJiaoDeXioShou/lhcli@latest
 ```
 
-### 2. Install script (Linux / macOS)
+### 2. 通过安装脚本（Linux / macOS）
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/aiShuiJiaoDeXioShou/lhcli/main/install.sh | sh
 ```
 
-Or pin a version / change the destination:
+也可以指定版本与安装目录：
 
 ```bash
 VERSION=v0.1.0 INSTALL_DIR="$HOME/.local/bin" sh install.sh
 ```
 
-### 3. Download a release binary
+### 3. 直接下载发布二进制
 
-Grab the archive for your OS/arch from the
-[releases page](https://github.com/aiShuiJiaoDeXioShou/lhcli/releases)
-and put the `lhcli` binary somewhere on your `PATH`.
+在 [Releases 页面](https://github.com/aiShuiJiaoDeXioShou/lhcli/releases) 下载对应系统的压缩包，
+将 `lhcli` 二进制放入 `PATH` 即可。
 
-## Usage
+## 使用
 
 ```bash
 lhcli --help
 lhcli version
-lhcli greet --name world
+lhcli greet --name 世界
 ```
 
-## Development
+## 开发
 
 ```bash
 go mod tidy
@@ -44,7 +43,7 @@ go build -o lhcli .
 go test ./...
 ```
 
-Build with version metadata injected:
+带版本信息构建：
 
 ```bash
 go build -ldflags "\
@@ -54,28 +53,27 @@ go build -ldflags "\
   -o lhcli .
 ```
 
-## Releasing
+## 发布
 
-Tag and push; the release workflow runs GoReleaser and publishes
-cross-platform binaries plus `checksums.txt`.
+打 tag 并推送后，发布工作流会运行 GoReleaser，产出全平台二进制与 `checksums.txt`。
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-## Project layout
+## 目录结构
 
 ```
 .
-├── main.go                 # thin entry point
-├── cmd/                    # cobra commands
-├── internal/buildinfo/     # build-time metadata (ldflags target)
-├── .goreleaser.yaml        # cross-platform release config
-├── .github/workflows/      # CI + release pipelines
-└── install.sh              # curl | sh installer
+├── main.go                 # 程序入口
+├── cmd/                    # cobra 命令
+├── internal/buildinfo/     # 构建期元数据（ldflags 注入点）
+├── .goreleaser.yaml        # 跨平台发布配置
+├── .github/workflows/      # CI 与发布流水线
+└── install.sh              # curl | sh 安装脚本
 ```
 
-## License
+## 许可证
 
-MIT - see [LICENSE](LICENSE).
+MIT，详见 [LICENSE](LICENSE)。

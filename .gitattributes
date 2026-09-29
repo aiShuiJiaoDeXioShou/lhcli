@@ -1,9 +1,8 @@
-# Normalize everything to LF in the repository and the working tree.
-# This keeps shell scripts (install.sh) and YAML valid on Unix systems
-# even when the project is checked out on Windows.
+# 仓库与工作区统一使用 LF 换行符。
+# 这样即使在 Windows 上检出，shell 脚本（install.sh）与 YAML 也能在 Unix 系统正常工作。
 * text=auto eol=lf
 
-# Explicit binary handling
+# 显式按二进制处理
 *.exe binary
 *.zip binary
 *.gz binary
