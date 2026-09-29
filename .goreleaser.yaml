@@ -1,0 +1,60 @@
+version: 2
+
+project_name: lhcli
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: lhcli
+    main: .
+    binary: lhcli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X github.com/aiShuiJiaoDeXioShou/lhcli/internal/buildinfo.Version={{.Version}}
+      - -X github.com/aiShuiJiaoDeXioShou/lhcli/internal/buildinfo.Commit={{.Commit}}
+      - -X github.com/aiShuiJiaoDeXioShou/lhcli/internal/buildinfo.Date={{.Date}}
+
+archives:
+  - id: lhcli
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+
+release:
+  github:
+    owner: aiShuiJiaoDeXioShou
+    name: lhcli
+  draft: false
+  prerelease: auto

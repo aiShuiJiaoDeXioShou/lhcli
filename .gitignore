@@ -1,0 +1,14 @@
+# Binaries
+/lhcli
+/lhcli.exe
+/dist/
+
+# Test / coverage artifacts
+*.test
+*.out
+coverage.txt
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/

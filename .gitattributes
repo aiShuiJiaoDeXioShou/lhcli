@@ -1,0 +1,9 @@
+# Normalize everything to LF in the repository and the working tree.
+# This keeps shell scripts (install.sh) and YAML valid on Unix systems
+# even when the project is checked out on Windows.
+* text=auto eol=lf
+
+# Explicit binary handling
+*.exe binary
+*.zip binary
+*.gz binary
