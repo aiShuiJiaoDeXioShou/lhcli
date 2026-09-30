@@ -9,7 +9,7 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print version information",
+	Short: "打印版本信息",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(cmd.OutOrStdout(), "lhcli %s (commit %s, built %s)\n",
 			buildinfo.Version, buildinfo.Commit, buildinfo.Date)

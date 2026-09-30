@@ -7,7 +7,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -24,4 +28,4 @@ jobs:
         run: go test ./...
 
       - name: 构建
-        run: go build -o /dev/null .
+        run: go build ./...
