@@ -35,6 +35,37 @@ lhcli version
 lhcli greet --name 世界
 ```
 
+### 从模板初始化项目
+
+```bash
+# 后端（linghe-go-template）
+lhcli init go order-api --module github.com/you/order-api
+
+# 移动端（linghe_mobile_template）
+lhcli init mobile my_shop --org com.you --display-name "我的商店"
+
+# 预览改名结果，不写入磁盘
+lhcli init go order-api --dry-run
+```
+
+`init` 会下载模板 tarball、执行模板内固定的 `scripts/rename.sh` 完成改名，
+再初始化 Git 仓库并安装依赖。常用参数：
+
+| 参数 | 说明 |
+| --- | --- |
+| `--dir` | 目标目录，默认 `./<name>` |
+| `--force` | 目标目录非空时先删除 |
+| `--no-git` | 跳过 Git 初始化 |
+| `--no-install` | 跳过依赖安装 |
+| `--dry-run` | 只预览，不写入 |
+| `--template-repo` / `--template-ref` | 覆盖模板仓库与 ref |
+| `--mirror` | 下载镜像前缀，例如 `https://gh-proxy.com/` |
+
+`init go` 可用 `--module` 指定 Go module 路径（默认 `github.com/example/<name>`）；
+`init mobile` 可用 `--org` 指定反向域名（默认 `com.example`）。
+
+> Windows 下 `init` 需要 Git Bash 提供的 `sh`，lhcli 会自动探测 Git for Windows 的安装路径。
+
 ## 开发
 
 ```bash
@@ -69,6 +100,7 @@ git push origin v0.1.0
 ├── main.go                 # 程序入口
 ├── cmd/                    # cobra 命令
 ├── internal/buildinfo/     # 构建期元数据（ldflags 注入点）
+├── internal/scaffold/      # init 命令：模板下载、改名、初始化
 ├── .goreleaser.yaml        # 跨平台发布配置
 ├── .github/workflows/      # CI 与发布流水线
 └── install.sh              # curl | sh 安装脚本

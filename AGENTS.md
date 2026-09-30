@@ -38,6 +38,7 @@ func Execute() { ... }
 - `cmd/`：基于 cobra 的命令定义
 - `internal/`：内部实现，不可被外部包导入
 - `internal/buildinfo/`：构建期元数据（`-ldflags` 注入点）
+- `internal/scaffold/`：`init` 命令的模板下载、改名与初始化逻辑
 
 ## 常用命令
 
