@@ -39,6 +39,7 @@ func Execute() { ... }
 - `internal/`：内部实现，不可被外部包导入
 - `internal/buildinfo/`：构建期元数据（`-ldflags` 注入点）
 - `internal/scaffold/`：`init` 命令的模板下载、改名与初始化逻辑
+- `internal/selfupdate/`：`update` 命令的版本检查、下载校验与二进制替换逻辑（含 Windows 的 `.old` 备份与启动清理）
 
 ## 常用命令
 

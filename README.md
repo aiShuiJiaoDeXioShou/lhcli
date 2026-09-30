@@ -33,6 +33,7 @@ VERSION=v0.1.0 INSTALL_DIR="$HOME/.local/bin" sh install.sh
 lhcli --help
 lhcli version
 lhcli greet --name 世界
+lhcli update --check
 ```
 
 ### 从模板初始化项目
@@ -65,6 +66,37 @@ lhcli init go order-api --dry-run
 `init mobile` 可用 `--org` 指定反向域名（默认 `com.example`）。
 
 > Windows 下 `init` 需要 Git Bash 提供的 `sh`，lhcli 会自动探测 Git for Windows 的安装路径。
+
+### 更新 lhcli 自身
+
+```bash
+# 检查是否有新版本（不下载）
+lhcli update --check
+
+# 更新到最新版本，交互确认后替换当前二进制
+lhcli update
+
+# 直接指定版本、跳过确认或预览动作
+lhcli update --version v0.3.0 --yes
+lhcli update --dry-run
+```
+
+更新流程会从 GitHub Releases 下载对应平台的压缩包，
+用发布目录中的 `checksums.txt` 校验 SHA256 后再替换当前可执行文件。
+
+| 参数 | 说明 |
+| --- | --- |
+| `--check` | 只检查是否有新版本 |
+| `--version` | 安装指定版本，默认最新版 |
+| `--force` | 已是最新或本地为 `dev` 时也强制重装 |
+| `--yes` / `-y` | 跳过交互确认（非交互式终端下必须提供） |
+| `--dry-run` | 只打印将要执行的动作 |
+| `--mirror` | 下载镜像前缀，例如 `https://gh-proxy.com/` |
+| `--repo` | 覆盖发布仓库 owner/name |
+
+> `go build` 得到的本地 `dev` 版本需加 `--force` 才会被覆盖；
+> 匿名调用 GitHub API 有每小时限额，必要时设置 `GITHUB_TOKEN` 或 `GH_TOKEN`。
+> Windows 下旧版本会备份为二进制旁的 `.old` 文件，并在下次启动时自动清理。
 
 ## 开发
 
@@ -101,6 +133,7 @@ git push origin v0.1.0
 ├── cmd/                    # cobra 命令
 ├── internal/buildinfo/     # 构建期元数据（ldflags 注入点）
 ├── internal/scaffold/      # init 命令：模板下载、改名、初始化
+├── internal/selfupdate/    # update 命令：版本检查、下载校验、替换二进制
 ├── .goreleaser.yaml        # 跨平台发布配置
 ├── .github/workflows/      # CI 与发布流水线
 └── install.sh              # curl | sh 安装脚本
