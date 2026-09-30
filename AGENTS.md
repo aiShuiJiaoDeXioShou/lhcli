@@ -63,7 +63,7 @@ go build -ldflags "\
 
 ## 提交与发布约定
 
-- 提交信息使用「`type: 中文描述`」的约定式格式，例如 `feat: 新增 upgrade 子命令`。
+- 提交信息使用「`type(模块): 中文描述`」的约定式格式，例如 `feat(init): 新增 project 脚手架`。
 - 发布通过打 tag 触发：`git tag v0.1.0 && git push origin v0.1.0`，随后由 GitHub Actions 运行 GoReleaser。
 - 换行符由 `.gitattributes` 统一为 LF，请勿在 `install.sh` 等脚本中引入 CRLF。
 
