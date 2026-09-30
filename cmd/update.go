@@ -50,7 +50,7 @@ func init() {
 	flags.BoolVar(&updateOpts.force, "force", false, "已是最新或本地为 dev 时也强制重装")
 	flags.BoolVarP(&updateOpts.yes, "yes", "y", false, "跳过交互确认")
 	flags.BoolVar(&updateOpts.dryRun, "dry-run", false, "只打印将要执行的动作，不写入磁盘")
-	flags.StringVar(&updateOpts.mirror, "mirror", "", "下载镜像前缀，例如 https://gh-proxy.com/")
+	flags.StringVar(&updateOpts.mirror, "mirror", "", "下载镜像前缀（默认读取环境变量 LHCLI_MIRROR），例如 https://gh-proxy.com/")
 	flags.StringVar(&updateOpts.repo, "repo", "", "发布仓库 owner/name，默认 "+selfupdate.DefaultRepo)
 	rootCmd.AddCommand(updateCmd)
 }

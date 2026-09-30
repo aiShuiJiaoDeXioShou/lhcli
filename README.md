@@ -91,7 +91,7 @@ lhcli update --dry-run
 | `--force` | 已是最新或本地为 `dev` 时也强制重装 |
 | `--yes` / `-y` | 跳过交互确认（非交互式终端下必须提供） |
 | `--dry-run` | 只打印将要执行的动作 |
-| `--mirror` | 下载镜像前缀，例如 `https://gh-proxy.com/` |
+| `--mirror` | 下载镜像前缀，例如 `https://gh-proxy.com/`（默认读取环境变量 `LHCLI_MIRROR`，命令行优先） |
 | `--repo` | 覆盖发布仓库 owner/name |
 
 > `go build` 得到的本地 `dev` 版本需加 `--force` 才会被覆盖；

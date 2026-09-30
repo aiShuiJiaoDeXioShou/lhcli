@@ -63,6 +63,7 @@ func Run(ctx context.Context, opts Options) (bool, error) {
 	if client == nil {
 		client = &http.Client{Timeout: requestTimeout}
 	}
+	mirror := resolveMirror(opts.Mirror)
 
 	fmt.Fprintf(out, "当前版本: %s\n", opts.CurrentVersion)
 
@@ -149,11 +150,11 @@ func Run(ctx context.Context, opts Options) (bool, error) {
 
 	archivePath := filepath.Join(tempDir, asset.Name)
 	fmt.Fprintln(out, "正在下载 ...")
-	if err := downloadAsset(ctx, client, asset.URL, opts.Mirror, archivePath); err != nil {
+	if err := downloadAsset(ctx, client, asset.URL, mirror, archivePath); err != nil {
 		return false, err
 	}
 
-	sums, err := fetchChecksums(ctx, client, checksumAsset.URL, opts.Mirror)
+	sums, err := fetchChecksums(ctx, client, checksumAsset.URL, mirror)
 	if err != nil {
 		return false, err
 	}
@@ -186,6 +187,14 @@ func Run(ctx context.Context, opts Options) (bool, error) {
 		fmt.Fprintf(errOut, "提示: 旧版本已备份为 %s.old，将在下次启动时自动清理\n", target)
 	}
 	return true, nil
+}
+
+// resolveMirror 返回最终使用的下载镜像前缀：命令行参数优先，其次环境变量 LHCLI_MIRROR。
+func resolveMirror(flagValue string) string {
+	if value := strings.TrimSpace(flagValue); value != "" {
+		return value
+	}
+	return strings.TrimSpace(os.Getenv("LHCLI_MIRROR"))
 }
 
 // confirm 询问用户是否继续更新。

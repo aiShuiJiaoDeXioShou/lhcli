@@ -261,6 +261,21 @@ func TestDownloadAssetMirror(t *testing.T) {
 	}
 }
 
+func TestResolveMirror(t *testing.T) {
+	t.Setenv("LHCLI_MIRROR", " https://gh-proxy.com/ ")
+	if got := resolveMirror(""); got != "https://gh-proxy.com/" {
+		t.Errorf("未按环境变量回退: %q", got)
+	}
+	if got := resolveMirror("https://flag.example/"); got != "https://flag.example/" {
+		t.Errorf("命令行参数未优先: %q", got)
+	}
+
+	t.Setenv("LHCLI_MIRROR", "")
+	if got := resolveMirror(""); got != "" {
+		t.Errorf("环境变量为空时应返回空串: %q", got)
+	}
+}
+
 // assertUnchanged 断言目标二进制仍为初始内容。
 func assertUnchanged(t *testing.T, target string) {
 	t.Helper()
