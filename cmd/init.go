@@ -26,7 +26,7 @@ func newInitGoCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "go <name>",
 		Short: "从 linghe-go-template 初始化 Go 后端项目",
-		Args:  cobra.ExactArgs(1),
+		Args:  exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]
 			opts.Stdout = cmd.OutOrStdout()
@@ -53,7 +53,7 @@ func newInitMobileCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "mobile <name>",
 		Short: "从 linghe_mobile_template 初始化 Flutter 项目",
-		Args:  cobra.ExactArgs(1),
+		Args:  exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]
 			opts.Stdout = cmd.OutOrStdout()
