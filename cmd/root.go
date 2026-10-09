@@ -14,11 +14,15 @@ import (
 var rootCmd = &cobra.Command{
 	Use:           "lhcli",
 	Short:         "个人开发工具：初始化项目、管理技能与更新自身",
-	Long:          "lhcli 提供 Go / Flutter 项目初始化、个人 skills 多 agent 管理和工具自更新。",
+	Long:          "lhcli 提供 Go / Flutter 项目初始化、个人 skills 多 agent 管理和工具自更新。\n在终端直接运行 lhcli 打开交互菜单；带参数命令可继续用于脚本。",
 	Version:       buildinfo.Version,
-	Example:       "  lhcli init go order-api\n  lhcli skills list --global\n  lhcli update --check",
+	Example:       "  lhcli\n  lhcli init go order-api\n  lhcli skills list --global\n  lhcli update --check",
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	Args:          exactArgs(0),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return interactive(cmd, "", false, os.Getenv("ACCESSIBLE") == "true")
+	},
 }
 
 // Execute 执行根命令，出错时以非零状态码退出。

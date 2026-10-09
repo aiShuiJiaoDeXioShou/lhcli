@@ -14,6 +14,7 @@ import (
 // Selection 指定技能、agent 和作用域；Base 是项目根目录或用户目录。
 type Selection struct {
 	Name   string
+	Names  []string
 	All    bool
 	Agents []string
 	Base   string
@@ -93,8 +94,26 @@ func (m *Manager) changeLinks(selection Selection, enable bool, out io.Writer) e
 	if err != nil {
 		return err
 	}
-	if (selection.Name == "") != selection.All || (selection.Name != "" && !validName(selection.Name)) {
-		return fmt.Errorf("必须且只能指定一个有效的技能名称或 --all")
+	modes := 0
+	if selection.Name != "" {
+		modes++
+	}
+	if len(selection.Names) > 0 {
+		modes++
+	}
+	if selection.All {
+		modes++
+	}
+	if modes != 1 {
+		return fmt.Errorf("必须且只能指定技能名称、名称列表或 --all")
+	}
+	if selection.Name != "" {
+		selection.Names = []string{selection.Name}
+	}
+	for _, name := range selection.Names {
+		if !validName(name) {
+			return fmt.Errorf("技能名称无效: %s", name)
+		}
 	}
 	if !selection.DryRun {
 		unlock, err := m.lock()
@@ -117,10 +136,16 @@ func (m *Manager) changeLinks(selection Selection, enable bool, out io.Writer) e
 			return err
 		}
 		if !selection.All {
-			if !slices.Contains(names, selection.Name) {
-				return fmt.Errorf("仓库中没有技能 %s，请检查 skills/%s/SKILL.md", selection.Name, selection.Name)
+			selected := []string{}
+			for _, name := range selection.Names {
+				if !slices.Contains(names, name) {
+					return fmt.Errorf("仓库中没有技能 %s，请检查 skills/%s/SKILL.md", name, name)
+				}
+				if !slices.Contains(selected, name) {
+					selected = append(selected, name)
+				}
 			}
-			names = []string{selection.Name}
+			names = selected
 		}
 		for _, name := range names {
 			for _, agent := range selection.Agents {
@@ -129,7 +154,7 @@ func (m *Manager) changeLinks(selection Selection, enable bool, out io.Writer) e
 		}
 	} else {
 		for _, b := range s.Links {
-			if b.Base == selection.Base && slices.Contains(selection.Agents, b.Agent) && (selection.All || b.Name == selection.Name) {
+			if b.Base == selection.Base && slices.Contains(selection.Agents, b.Agent) && (selection.All || slices.Contains(selection.Names, b.Name)) {
 				plan = append(plan, b)
 			}
 		}

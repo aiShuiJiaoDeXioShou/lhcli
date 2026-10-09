@@ -29,6 +29,23 @@ VERSION=v0.1.0 INSTALL_DIR="$HOME/.local/bin" sh install.sh
 
 ## 使用
 
+在终端直接运行 `lhcli` 即可打开交互菜单。方向键选择、空格多选、Enter 继续，Ctrl+C 退出。
+项目初始化和技能启停都会先展示摘要，再确认执行。
+
+```bash
+lhcli                 # 主菜单
+lhcli init            # 项目初始化向导
+lhcli skills          # 技能管理向导
+lhcli skills submit   # 提交技能变更，可选择推送
+lhcli tui --accessible # 适合屏幕阅读器的逐项提示
+```
+
+项目向导支持 Go / Flutter 模板、项目名、保存目录、module 或应用标识、Git 初始化与依赖安装。
+非空目录不会被覆盖。技能向导支持仓库配置、技能和 agent 多选、查看状态、更新、提交及推送。
+
+原有带参数命令仍可用于脚本。`lhcli`、`lhcli init`、`lhcli skills` 在输入或输出被重定向时显示帮助；
+显式的 `lhcli tui` 和提交向导要求终端，不会在流水线中等待输入。
+
 ```bash
 lhcli --help
 lhcli version
@@ -169,6 +186,7 @@ git push origin v0.1.0
 ├── internal/scaffold/      # init 命令：模板下载、改名、初始化
 ├── internal/selfupdate/    # update 命令：版本检查、下载校验、替换二进制
 ├── internal/skills/        # skills 命令：仓库登记、更新与多 agent 链接
+├── internal/tui/           # 项目与技能交互向导
 ├── docs/skills.md          # 技能使用说明与恢复方法
 ├── scripts/               # 安装脚本自检
 ├── .goreleaser.yaml        # 跨平台发布配置

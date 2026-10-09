@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/aiShuiJiaoDeXioShou/lhcli/internal/scaffold"
 	"github.com/spf13/cobra"
 )
@@ -12,6 +14,10 @@ var initCmd = &cobra.Command{
 
 模板下载后会自动执行模板内的 scripts/rename.sh 完成改名，
 随后初始化 Git 仓库并安装依赖。`,
+	Args: exactArgs(0),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return interactive(cmd, "project", false, os.Getenv("ACCESSIBLE") == "true")
+	},
 }
 
 func init() {

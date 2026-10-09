@@ -61,3 +61,25 @@ func TestCompletion(t *testing.T) {
 		}
 	}
 }
+
+func TestInteractiveCommandsWithPipedIO(t *testing.T) {
+	for _, test := range []struct {
+		args      []string
+		wantError bool
+	}{
+		{[]string{"skills"}, false},
+		{[]string{"tui"}, true},
+		{[]string{"skills", "submit"}, true},
+	} {
+		root := &cobra.Command{Use: "lhcli", SilenceErrors: true, SilenceUsage: true}
+		root.AddCommand(newSkillsCmd(), newTUICmd())
+		var out bytes.Buffer
+		root.SetIn(&bytes.Buffer{})
+		root.SetOut(&out)
+		root.SetArgs(test.args)
+		err := root.Execute()
+		if (err != nil) != test.wantError {
+			t.Fatalf("非终端行为错误 %v: %v", test.args, err)
+		}
+	}
+}
