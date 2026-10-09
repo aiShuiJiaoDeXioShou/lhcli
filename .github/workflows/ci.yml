@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: 检出代码
@@ -29,3 +29,7 @@ jobs:
 
       - name: 构建
         run: go build ./...
+
+      - name: 安装脚本自检
+        if: runner.os != 'Windows'
+        run: sh scripts/test-install.sh

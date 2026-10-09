@@ -10,8 +10,9 @@ import (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "打印版本信息",
+	Args:  exactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Fprintf(cmd.OutOrStdout(), "lhcli %s (commit %s, built %s)\n",
+		fmt.Fprintf(cmd.OutOrStdout(), "lhcli %s（提交 %s，构建时间 %s）\n",
 			buildinfo.Version, buildinfo.Commit, buildinfo.Date)
 		return nil
 	},

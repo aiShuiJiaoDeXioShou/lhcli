@@ -40,6 +40,8 @@ func Execute() { ... }
 - `internal/buildinfo/`：构建期元数据（`-ldflags` 注入点）
 - `internal/scaffold/`：`init` 命令的模板下载、改名与初始化逻辑
 - `internal/selfupdate/`：`update` 命令的版本检查、下载校验与二进制替换逻辑（含 Windows 的 `.old` 备份与启动清理）
+- `internal/skills/`：个人技能仓库登记、快进更新和多 agent 符号链接管理
+- `docs/skills.md`：技能管理使用说明、目录约定与恢复方法
 
 ## 常用命令
 
@@ -47,6 +49,7 @@ func Execute() { ... }
 go mod tidy
 go vet ./...
 go test ./...
+sh scripts/test-install.sh # Linux / macOS 安装脚本自检
 go build -o lhcli.exe .   # Windows 下产物带 .exe 后缀
 ```
 

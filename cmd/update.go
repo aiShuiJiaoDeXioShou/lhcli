@@ -24,7 +24,7 @@ var updateCmd = &cobra.Command{
 
 更新前会下载 checksums.txt 校验 SHA256；Windows 下旧版本会备份为
 二进制旁的 .old 文件，并在下次启动时自动清理。`,
-	Args: cobra.NoArgs,
+	Args: exactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_, err := selfupdate.Run(cmd.Context(), selfupdate.Options{
 			CurrentVersion: buildinfo.Version,

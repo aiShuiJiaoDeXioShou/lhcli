@@ -1,6 +1,6 @@
 # lhcli
 
-使用 Go 编写的自定义命令行工具。
+使用 Go 编写的个人开发工具，提供项目模板初始化、多 agent 技能管理和自更新。
 
 ## 安装
 
@@ -34,6 +34,7 @@ lhcli --help
 lhcli version
 lhcli greet --name 世界
 lhcli update --check
+lhcli skills list --global
 ```
 
 ### 从模板初始化项目
@@ -66,6 +67,34 @@ lhcli init go order-api --dry-run
 `init mobile` 可用 `--org` 指定反向域名（默认 `com.example`）。
 
 > Windows 下 `init` 需要 Git Bash 提供的 `sh`，lhcli 会自动探测 Git for Windows 的安装路径。
+
+### 管理个人技能
+
+先登记已有的 Git 技能仓库，再将 `skills/<名称>/` 链接到 agent 的技能目录：
+
+```bash
+lhcli skills init --path /path/to/my-skills
+lhcli skills list --global
+lhcli skills enable go-api --agent codex,claude --global
+lhcli skills update --check
+lhcli skills disable go-api --agent claude --global
+```
+
+支持 Codex、Claude Code 和 Cursor。`--global` 操作用户目录，省略时操作当前目录。
+也可用 `init --repo owner/my-skills` 克隆到 `~/.lhcli/repos/my-skills/`。
+同名的手工目录不会被覆盖；更新要求工作区干净且只允许快进。
+Windows 需要创建符号链接的权限。完整目录约定、批量操作和恢复说明见[技能管理文档](docs/skills.md)。
+
+### 命令帮助与补全
+
+```bash
+lhcli help skills
+lhcli skills enable --help
+lhcli completion zsh
+```
+
+`completion` 支持 `bash`、`zsh`、`fish`、`powershell`，输出脚本到标准输出。
+`greet` 示例命令仍可使用，但不再出现在主帮助菜单中。
 
 ### 更新 lhcli 自身
 
@@ -102,9 +131,14 @@ lhcli update --dry-run
 
 ```bash
 go mod tidy
+go vet ./...
 go build -o lhcli .
 go test ./...
+sh scripts/test-install.sh
 ```
+
+安装脚本自检适用于 Linux / macOS，使用本地下载替身，不访问网络或系统安装目录。
+协作约定见 [AGENTS.md](AGENTS.md)。
 
 带版本信息构建：
 
@@ -134,6 +168,9 @@ git push origin v0.1.0
 ├── internal/buildinfo/     # 构建期元数据（ldflags 注入点）
 ├── internal/scaffold/      # init 命令：模板下载、改名、初始化
 ├── internal/selfupdate/    # update 命令：版本检查、下载校验、替换二进制
+├── internal/skills/        # skills 命令：仓库登记、更新与多 agent 链接
+├── docs/skills.md          # 技能使用说明与恢复方法
+├── scripts/               # 安装脚本自检
 ├── .goreleaser.yaml        # 跨平台发布配置
 ├── .github/workflows/      # CI 与发布流水线
 └── install.sh              # curl | sh 安装脚本
