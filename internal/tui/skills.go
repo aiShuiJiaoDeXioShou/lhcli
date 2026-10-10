@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"charm.land/huh/v2"
@@ -34,10 +35,12 @@ func (u *wizard) skills() error {
 		}
 		var action string
 		if err := u.form(huh.NewSelect[string]().Title("个人 skills").Description(repo).Options(
+			huh.NewOption("导入本地技能", "import"),
 			huh.NewOption("启用技能到 agent", "enable"),
 			huh.NewOption("停用已安装的技能", "disable"),
 			huh.NewOption("查看技能状态", "list"),
-			huh.NewOption("提交技能变更 / 推送到远端", "submit"),
+			huh.NewOption("提交技能和指令 / 推送到远端", "submit"),
+			huh.NewOption("查看默认仓库和同步状态", "info"),
 			huh.NewOption("从远端更新技能", "update"),
 			huh.NewOption("返回", "back"),
 		).Value(&action)); err != nil {
@@ -46,6 +49,19 @@ func (u *wizard) skills() error {
 		switch action {
 		case "back":
 			return nil
+		case "import":
+			err = u.importSkill(m)
+		case "info":
+			err = m.Info(u.ctx, u.out)
+			if err == nil {
+				err = u.pause()
+			}
+		case "list":
+			fmt.Fprintln(u.out, "以下是用户级技能状态；命令行可用 lhcli skills list 查看当前项目。")
+			err = m.List(skills.Selection{Base: m.Home}, u.out)
+			if err == nil {
+				err = u.pause()
+			}
 		case "submit":
 			err = u.submit(m)
 		case "update":
@@ -93,7 +109,7 @@ func (u *wizard) links(m *skills.Manager, action string) error {
 		return err
 	}
 	if len(names) == 0 {
-		fmt.Fprintln(u.out, "没有可选择的技能；源码应位于仓库的 skills/<名称>/SKILL.md 中。")
+		fmt.Fprintln(u.out, "没有可选择的技能。先选择“导入本地技能”，或运行 lhcli skills import <技能目录>；停用列表只显示当前范围的受管链接。")
 		return nil
 	}
 	options := make([]huh.Option[string], len(names))
@@ -128,13 +144,13 @@ func (u *wizard) submit(m *skills.Manager) error {
 	}
 	fmt.Fprintf(u.out, "\n仓库: %s\n分支: %s\n", plan.Repo, plan.Branch)
 	fmt.Fprint(u.out, plan.Summary)
-	message := "chore(skills): 更新个人技能"
+	message := "chore(config): 更新个人技能和指令"
 	push := false
 	var fields []huh.Field
 	if len(plan.Files) > 0 {
-		fields = append(fields, huh.NewInput().Title("提交说明").Value(&message).Validate(required))
+		fields = append(fields, u.input("提交说明", &message, required))
 	} else {
-		fmt.Fprintln(u.out, "没有新的技能文件变更，可以选择推送已有提交。")
+		fmt.Fprintln(u.out, "没有新的技能或指令变更，可以选择推送已有提交。")
 	}
 	fields = append(fields, huh.NewConfirm().Title("推送到当前分支的远端上游？").
 		Description("会包含当前分支尚未推送的提交；推送失败时保留本地提交。").
@@ -151,9 +167,32 @@ func (u *wizard) submit(m *skills.Manager) error {
 	if len(plan.Files) == 0 && !push {
 		return nil
 	}
-	confirmed, err := u.confirm("确认执行上面的技能提交操作？")
+	confirmed, err := u.confirm("确认提交上面列出的技能和指令文件？")
 	if err != nil || !confirmed {
 		return err
 	}
 	return m.Submit(u.ctx, plan, message, push, u.out)
+}
+
+func (u *wizard) importSkill(m *skills.Manager) error {
+	var source string
+	if err := u.form(huh.NewInput().Title("技能目录").Description("选择包含 SKILL.md 的单个目录；复制后原文件保留").Placeholder("~/code/my-skill").Validate(required).Value(&source)); err != nil {
+		return err
+	}
+	source, err := expandPath(source)
+	if err != nil {
+		return err
+	}
+	if err := m.Import(source, true, u.out); err != nil {
+		return err
+	}
+	confirmed, err := u.confirm("确认导入这个技能？")
+	if err != nil || !confirmed {
+		return err
+	}
+	if err := m.Import(source, false, u.out); err != nil {
+		return err
+	}
+	fmt.Fprintf(u.out, "已导入 %s。选择“启用技能到 agent”即可使用，选择“提交技能和指令”可备份到远端。\n", filepath.Base(source))
+	return u.pause()
 }

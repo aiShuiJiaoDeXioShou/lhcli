@@ -15,6 +15,9 @@ func TestSkillsArguments(t *testing.T) {
 		{"skills", "init", "unexpected"},
 		{"skills", "list", "unexpected"},
 		{"skills", "update", "unexpected"},
+		{"skills", "init", "--create", "--repo", "owner/repo"},
+		{"skills", "import", "--dry-run"},
+		{"skills", "import", "one", "two"},
 	} {
 		root := &cobra.Command{Use: "lhcli", SilenceErrors: true, SilenceUsage: true}
 		root.AddCommand(newSkillsCmd())
@@ -70,9 +73,13 @@ func TestInteractiveCommandsWithPipedIO(t *testing.T) {
 		{[]string{"skills"}, false},
 		{[]string{"tui"}, true},
 		{[]string{"skills", "submit"}, true},
+		{[]string{"skills", "import"}, true},
+		{[]string{"skills", "enable"}, true},
+		{[]string{"agents"}, false},
+		{[]string{"agents", "submit"}, true},
 	} {
 		root := &cobra.Command{Use: "lhcli", SilenceErrors: true, SilenceUsage: true}
-		root.AddCommand(newSkillsCmd(), newTUICmd())
+		root.AddCommand(newSkillsCmd(), newTUICmd(), newAgentsCmd())
 		var out bytes.Buffer
 		root.SetIn(&bytes.Buffer{})
 		root.SetOut(&out)
