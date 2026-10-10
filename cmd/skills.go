@@ -11,7 +11,11 @@ import (
 func newSkillsCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use: "skills", Short: "管理个人技能仓库和多个 agent 的技能链接",
-		Long: "管理一个个人 Git 技能仓库，按需将 skills/<名称> 链接到 Codex、Claude Code 或 Cursor。\n启用与停用默认作用于当前目录；使用 --global 操作用户级技能。",
+		Long: "管理一个个人 Git 技能仓库，按需将 skills/<名称> 链接到 Codex、Claude Code 或 Cursor。\n在终端无参数运行可打开向导。带参数的启停命令默认作用于当前目录；使用 --global 操作用户级技能。",
+		Args: exactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return interactive(cmd, "skills", false, os.Getenv("ACCESSIBLE") == "true")
+		},
 	}
 	var source, path string
 	var initDryRun bool
@@ -19,6 +23,9 @@ func newSkillsCmd() *cobra.Command {
 		Use: "init", Short: "克隆或登记技能仓库", Args: exactArgs(0),
 		Example: "  lhcli skills init --repo owner/my-skills\n  lhcli skills init --path /path/to/my-skills",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().NFlag() == 0 {
+				return interactive(cmd, "setup", true, os.Getenv("ACCESSIBLE") == "true")
+			}
 			m, err := skills.New()
 			if err != nil {
 				return err
@@ -47,6 +54,12 @@ func newSkillsCmd() *cobra.Command {
 	updateCommand.Flags().BoolVar(&check, "check", false, "获取远端引用并检查更新，不修改技能文件")
 	updateCommand.Flags().BoolVar(&updateDryRun, "dry-run", false, "只预览，不联网或修改仓库")
 	command.AddCommand(updateCommand)
+	command.AddCommand(&cobra.Command{
+		Use: "submit", Short: "交互式提交技能变更，可选择推送到远端", Args: exactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return interactive(cmd, "submit", true, os.Getenv("ACCESSIBLE") == "true")
+		},
+	})
 	return command
 }
 

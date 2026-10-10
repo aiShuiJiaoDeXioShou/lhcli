@@ -11,15 +11,24 @@ import (
 )
 
 func git(ctx context.Context, dir string, args ...string) (string, error) {
+	output, err := gitOutput(ctx, dir, args...)
+	return strings.TrimSpace(output), err
+}
+
+func gitOutput(ctx context.Context, dir string, args ...string) (string, error) {
 	args = append([]string{"--no-optional-locks", "-c", "core.hooksPath=" + os.DevNull}, args...)
 	command := exec.CommandContext(ctx, "git", args...)
 	command.Dir = dir
 	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
-	output, err := command.CombinedOutput()
+	output, err := command.Output()
 	if err != nil {
-		return "", fmt.Errorf("Git 操作失败，请检查 Git 安装、仓库权限与认证: %w\n%s", err, strings.TrimSpace(string(output)))
+		var detail string
+		if exit, ok := err.(*exec.ExitError); ok {
+			detail = strings.TrimSpace(string(output) + "\n" + string(exit.Stderr))
+		}
+		return "", fmt.Errorf("Git 操作失败，请检查 Git 安装、仓库权限与认证: %w\n%s", err, detail)
 	}
-	return strings.TrimSpace(string(output)), nil
+	return string(output), nil
 }
 
 func repositoryRoot(ctx context.Context, path string) (string, error) {
