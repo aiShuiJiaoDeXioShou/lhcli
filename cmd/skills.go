@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/aiShuiJiaoDeXioShou/lhcli/internal/skills"
+	"github.com/aiShuiJiaoDeXioShou/lhcli/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -72,6 +73,29 @@ func newSkillsCmd() *cobra.Command {
 	}}
 	importCommand.Flags().BoolVar(&importDryRun, "dry-run", false, "只预览，不复制技能")
 	command.AddCommand(importCommand)
+	command.AddCommand(&cobra.Command{
+		Use: "add <技能目录>", Short: "添加本地技能，然后引导提交和推送", Args: exactArgs(1),
+		Long:    "将包含 SKILL.md 的目录复制到默认仓库，随后引导提交并选择是否推送。\n原目录保留；取消提交时，已导入的文件也会保留，可用 lhcli skills submit 继续。",
+		Example: "  lhcli skills add ~/code/my-skill",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// 必须在复制前检查终端，避免非交互调用失败时已经写入文件。
+			if !tui.IsTerminal(cmd.InOrStdin(), cmd.OutOrStdout()) {
+				return fmt.Errorf("添加并提交需要终端，请直接运行 lhcli skills add <技能目录>；脚本中只导入可用 lhcli skills import <技能目录>")
+			}
+			m, err := skills.New()
+			if err != nil {
+				return err
+			}
+			if _, err := m.PlanSubmit(cmd.Context()); err != nil {
+				return err
+			}
+			if err := m.Import(args[0], false, cmd.OutOrStdout()); err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "技能已导入，接下来提交并选择是否推送。取消时文件保留，可运行 lhcli skills submit 继续。")
+			return interactive(cmd, "submit", true, os.Getenv("ACCESSIBLE") == "true")
+		},
+	})
 	for _, action := range []string{"list", "enable", "disable"} {
 		command.AddCommand(newSkillsLinksCmd(action))
 	}
