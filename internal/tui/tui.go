@@ -50,10 +50,13 @@ func (u *wizard) run(start string) error {
 	if start == "project" {
 		return u.project()
 	}
+	if start == "agents" {
+		return u.agents()
+	}
 	if start == "skills" {
 		return u.skills()
 	}
-	if start == "setup" || start == "submit" {
+	if start == "setup" || start == "submit" || start == "import" || start == "enable" || start == "disable" {
 		m, err := skills.New()
 		if err != nil {
 			return err
@@ -61,13 +64,24 @@ func (u *wizard) run(start string) error {
 		if start == "setup" {
 			return u.setup(m)
 		}
+		ready, err := u.ensureRepository(m)
+		if err != nil || !ready {
+			return err
+		}
+		switch start {
+		case "import":
+			return u.importSkill(m)
+		case "enable", "disable":
+			return u.links(m, start)
+		}
 		return u.submit(m)
 	}
 	for {
 		var action string
 		if err := u.form(huh.NewSelect[string]().Title("lhcli · 开始工作").Description("选择要完成的事情").Options(
 			huh.NewOption("初始化项目", "project"),
-			huh.NewOption("管理和提交 skills", "skills"),
+			huh.NewOption("管理 skills", "skills"),
+			huh.NewOption("管理 AGENTS.md 指令模板", "agents"),
 			huh.NewOption("退出", "exit"),
 		).Value(&action)); err != nil {
 			return err
@@ -78,6 +92,8 @@ func (u *wizard) run(start string) error {
 			err = u.project()
 		case "skills":
 			err = u.skills()
+		case "agents":
+			err = u.agents()
 		default:
 			return nil
 		}
@@ -97,6 +113,20 @@ func (u *wizard) form(fields ...huh.Field) error {
 	}
 	return huh.NewForm(huh.NewGroup(fields...)).WithInput(u.in).WithOutput(output).
 		WithAccessible(u.accessible).WithShowHelp(false).RunWithContext(u.ctx)
+}
+
+func (u *wizard) input(title string, value *string, validate func(string) error) *huh.Input {
+	initial := *value
+	if u.accessible && initial != "" {
+		title += "（回车使用 " + initial + "）"
+	}
+	return huh.NewInput().Title(title).Value(value).Validate(func(input string) error {
+		// Huh 逐项模式在补入默认值前校验，这里按实际将采用的值校验。
+		if u.accessible && strings.TrimSpace(input) == "" {
+			input = initial
+		}
+		return validate(input)
+	})
 }
 
 func (u *wizard) confirm(title string) (bool, error) {
@@ -149,8 +179,16 @@ func expandPath(value string) (string, error) {
 }
 
 func (u *wizard) setup(m *skills.Manager) error {
+	repo, err := m.Repository()
+	if err != nil {
+		return err
+	}
+	if repo != "" {
+		return m.Info(u.ctx, u.out)
+	}
 	var method, value string
-	if err := u.form(huh.NewSelect[string]().Title("配置个人技能仓库").Options(
+	if err := u.form(huh.NewSelect[string]().Title("首次设置 · 个人技能与指令仓库").Description("一个仓库保存 skills 和 AGENTS.md 模板").Options(
+		huh.NewOption("创建个人仓库（推荐，自动初始化）", "create"),
 		huh.NewOption("登记本机已有的 Git 仓库", "local"),
 		huh.NewOption("从远端克隆 Git 仓库", "remote"),
 		huh.NewOption("返回", "back"),
@@ -159,6 +197,24 @@ func (u *wizard) setup(m *skills.Manager) error {
 	}
 	if method == "back" {
 		return nil
+	}
+	if method == "create" {
+		value = filepath.Join(m.Dir, "repos", "my-skills")
+		if err := u.form(u.input("新仓库保存位置", &value, required)); err != nil {
+			return err
+		}
+		path, err := expandPath(value)
+		if err != nil {
+			return err
+		}
+		if err := m.Create(u.ctx, path, true, u.out); err != nil {
+			return err
+		}
+		confirmed, err := u.confirm("创建并设为默认仓库？")
+		if err != nil || !confirmed {
+			return err
+		}
+		return m.Create(u.ctx, path, false, u.out)
 	}
 	title, placeholder := "本地仓库目录", "~/code/my-skills"
 	if method == "remote" {
@@ -185,4 +241,25 @@ func (u *wizard) setup(m *skills.Manager) error {
 		return err
 	}
 	return m.Init(u.ctx, source, path, false, u.out)
+}
+
+func (u *wizard) ensureRepository(m *skills.Manager) (bool, error) {
+	repo, err := m.Repository()
+	if err != nil {
+		return false, err
+	}
+	if repo == "" {
+		if err := u.setup(m); err != nil {
+			return false, err
+		}
+		repo, err = m.Repository()
+	}
+	return repo != "", err
+}
+
+func (u *wizard) pause() error {
+	if u.accessible {
+		return nil
+	}
+	return u.form(huh.NewNote().Title("操作结果见上方").Next(true).NextLabel("返回菜单"))
 }

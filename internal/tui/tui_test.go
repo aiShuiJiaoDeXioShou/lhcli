@@ -106,3 +106,56 @@ func TestPipedIOIsNotTerminal(t *testing.T) {
 		t.Fatal("普通输入输出流不应进入 TUI")
 	}
 }
+
+func TestCreateWizardCancellation(t *testing.T) {
+	home := t.TempDir()
+	m := &skills.Manager{Home: home, Dir: filepath.Join(home, ".lhcli")}
+	var out bytes.Buffer
+	u := &wizard{ctx: context.Background(), out: &out, errOut: &out, accessible: true,
+		in: &lineInput{r: bufio.NewReader(strings.NewReader("1\n\nn\n"))}}
+	if err := u.setup(m); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(m.Dir); !os.IsNotExist(err) {
+		t.Fatal("取消创建仓库不能写入文件")
+	}
+	if !strings.Contains(out.String(), "已取消") {
+		t.Fatalf("未进入创建仓库确认: %s", out.String())
+	}
+}
+
+func TestTemplateWizardCancellation(t *testing.T) {
+	home := t.TempDir()
+	repo := filepath.Join(home, "source")
+	if err := os.MkdirAll(filepath.Join(repo, "agents", "example"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "agents", "example", "AGENTS.md"), []byte("模板内容"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "init", repo).CombinedOutput(); err != nil {
+		t.Fatalf("初始化失败: %s %v", out, err)
+	}
+	m := &skills.Manager{Home: home, Dir: filepath.Join(home, ".lhcli")}
+	if err := m.Init(context.Background(), "", repo, false, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	project := t.TempDir()
+	file := filepath.Join(project, "AGENTS.md")
+	if err := os.WriteFile(file, []byte("项目原文"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	u := &wizard{ctx: context.Background(), out: &out, errOut: &out, accessible: true,
+		in: &lineInput{r: bufio.NewReader(strings.NewReader("1\n" + project + "\nn\n"))}}
+	if err := u.template(m, "apply"); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(file)
+	if err != nil || string(content) != "项目原文" {
+		t.Fatal("取消不能替换项目指令")
+	}
+	if _, err := os.Stat(filepath.Join(m.Dir, "backups")); !os.IsNotExist(err) {
+		t.Fatal("取消不应写入备份")
+	}
+}

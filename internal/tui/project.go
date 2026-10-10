@@ -24,16 +24,16 @@ func (u *wizard) project() error {
 	}
 	opts.Name = name
 	opts.Dir = "./" + name
-	fields := []huh.Field{huh.NewInput().Title("项目保存位置").Value(&opts.Dir).Validate(validateProjectDir)}
+	fields := []huh.Field{u.input("项目保存位置", &opts.Dir, validateProjectDir)}
 	if opts.Kind == scaffold.KindGo {
 		opts.Module = "github.com/example/" + name
-		fields = append(fields, huh.NewInput().Title("Go module 路径").Description("可替换为自己的代码仓库地址").Value(&opts.Module).Validate(required))
+		fields = append(fields, u.input("Go module 路径", &opts.Module, required).Description("可替换为自己的代码仓库地址"))
 	} else {
 		opts.Org = "com.example"
 		opts.DisplayName = strings.ReplaceAll(name, "_", " ")
 		fields = append(fields,
-			huh.NewInput().Title("应用组织标识").Description("反向域名，例如 com.example").Value(&opts.Org).Validate(required),
-			huh.NewInput().Title("应用显示名称").Value(&opts.DisplayName).Validate(required))
+			u.input("应用组织标识", &opts.Org, required).Description("反向域名，例如 com.example"),
+			u.input("应用显示名称", &opts.DisplayName, required))
 	}
 	gitInit, install := true, true
 	fields = append(fields,

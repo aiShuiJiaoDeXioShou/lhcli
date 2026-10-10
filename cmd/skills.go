@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/aiShuiJiaoDeXioShou/lhcli/internal/skills"
+	"github.com/aiShuiJiaoDeXioShou/lhcli/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -18,10 +19,10 @@ func newSkillsCmd() *cobra.Command {
 		},
 	}
 	var source, path string
-	var initDryRun bool
+	var initDryRun, create bool
 	initCommand := &cobra.Command{
-		Use: "init", Short: "克隆或登记技能仓库", Args: exactArgs(0),
-		Example: "  lhcli skills init --repo owner/my-skills\n  lhcli skills init --path /path/to/my-skills",
+		Use: "init", Short: "创建、克隆或登记默认仓库", Args: exactArgs(0),
+		Example: "  lhcli skills init --create\n  lhcli skills init --repo owner/my-skills\n  lhcli skills init --path /path/to/my-skills",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flags().NFlag() == 0 {
 				return interactive(cmd, "setup", true, os.Getenv("ACCESSIBLE") == "true")
@@ -30,13 +31,71 @@ func newSkillsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if create {
+				if source != "" {
+					return fmt.Errorf("--create 不能与 --repo 同时使用")
+				}
+				return m.Create(cmd.Context(), path, initDryRun, cmd.OutOrStdout())
+			}
 			return m.Init(cmd.Context(), source, path, initDryRun, cmd.OutOrStdout())
 		},
 	}
 	initCommand.Flags().StringVar(&source, "repo", "", "仓库 owner/repo、HTTPS 或 SSH 地址")
-	initCommand.Flags().StringVar(&path, "path", "", "已有的本地 Git 仓库根目录")
+	initCommand.Flags().StringVar(&path, "path", "", "本地仓库目录；配合 --create 创建新目录")
+	initCommand.Flags().BoolVar(&create, "create", false, "创建默认本地仓库，包含初始提交和 AGENTS.md 模板")
 	initCommand.Flags().BoolVar(&initDryRun, "dry-run", false, "只预览，不克隆或写入配置")
 	command.AddCommand(initCommand)
+	command.AddCommand(&cobra.Command{Use: "info", Short: "查看默认仓库位置、远端和 Git 状态", Args: exactArgs(0), RunE: func(cmd *cobra.Command, args []string) error {
+		m, err := skills.New()
+		if err != nil {
+			return err
+		}
+		return m.Info(cmd.Context(), cmd.OutOrStdout())
+	}})
+	var importDryRun bool
+	importCommand := &cobra.Command{Use: "import [技能目录]", Short: "复制本地技能到默认仓库，保留原文件", Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 1 {
+			return fmt.Errorf("最多指定一个技能目录")
+		}
+		return nil
+	}, RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			if cmd.Flags().NFlag() != 0 {
+				return fmt.Errorf("使用参数时请提供技能目录")
+			}
+			return interactive(cmd, "import", true, os.Getenv("ACCESSIBLE") == "true")
+		}
+		m, err := skills.New()
+		if err != nil {
+			return err
+		}
+		return m.Import(args[0], importDryRun, cmd.OutOrStdout())
+	}}
+	importCommand.Flags().BoolVar(&importDryRun, "dry-run", false, "只预览，不复制技能")
+	command.AddCommand(importCommand)
+	command.AddCommand(&cobra.Command{
+		Use: "add <技能目录>", Short: "添加本地技能，然后引导提交和推送", Args: exactArgs(1),
+		Long:    "将包含 SKILL.md 的目录复制到默认仓库，随后引导提交并选择是否推送。\n原目录保留；取消提交时，已导入的文件也会保留，可用 lhcli skills submit 继续。",
+		Example: "  lhcli skills add ~/code/my-skill",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// 必须在复制前检查终端，避免非交互调用失败时已经写入文件。
+			if !tui.IsTerminal(cmd.InOrStdin(), cmd.OutOrStdout()) {
+				return fmt.Errorf("添加并提交需要终端，请直接运行 lhcli skills add <技能目录>；脚本中只导入可用 lhcli skills import <技能目录>")
+			}
+			m, err := skills.New()
+			if err != nil {
+				return err
+			}
+			if _, err := m.PlanSubmit(cmd.Context()); err != nil {
+				return err
+			}
+			if err := m.Import(args[0], false, cmd.OutOrStdout()); err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "技能已导入，接下来提交并选择是否推送。取消时文件保留，可运行 lhcli skills submit 继续。")
+			return interactive(cmd, "submit", true, os.Getenv("ACCESSIBLE") == "true")
+		},
+	})
 	for _, action := range []string{"list", "enable", "disable"} {
 		command.AddCommand(newSkillsLinksCmd(action))
 	}
@@ -55,7 +114,7 @@ func newSkillsCmd() *cobra.Command {
 	updateCommand.Flags().BoolVar(&updateDryRun, "dry-run", false, "只预览，不联网或修改仓库")
 	command.AddCommand(updateCommand)
 	command.AddCommand(&cobra.Command{
-		Use: "submit", Short: "交互式提交技能变更，可选择推送到远端", Args: exactArgs(0),
+		Use: "submit", Short: "交互式提交技能和指令模板，可选择推送到远端", Args: exactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return interactive(cmd, "submit", true, os.Getenv("ACCESSIBLE") == "true")
 		},
@@ -73,6 +132,9 @@ func newSkillsLinksCmd(action string) *cobra.Command {
 	} else {
 		command.Use += " [名称]"
 		command.Args = func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 && cmd.Flags().NFlag() == 0 {
+				return nil
+			}
 			if (selection.All && len(args) == 0) || (!selection.All && len(args) == 1) {
 				return nil
 			}
@@ -85,6 +147,9 @@ func newSkillsLinksCmd(action string) *cobra.Command {
 	command.Flags().StringSliceVar(&selection.Agents, "agent", nil, "目标 agent：codex、claude、cursor，可用逗号分隔；list 默认显示全部")
 	command.Flags().BoolVar(&global, "global", false, "操作用户目录，默认操作当前目录")
 	command.RunE = func(cmd *cobra.Command, args []string) error {
+		if action != "list" && len(args) == 0 && cmd.Flags().NFlag() == 0 {
+			return interactive(cmd, action, true, os.Getenv("ACCESSIBLE") == "true")
+		}
 		m, err := skills.New()
 		if err != nil {
 			return err

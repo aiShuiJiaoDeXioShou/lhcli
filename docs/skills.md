@@ -4,7 +4,7 @@
 
 ## 交互入口
 
-在终端运行 `lhcli skills` 打开菜单。尚未登记仓库时，会引导选择本地仓库或克隆远端。
+在终端运行 `lhcli skills` 打开菜单。尚未登记仓库时，优先提供“创建个人仓库”，也可以登记本地仓库或克隆远端。
 也可运行 `lhcli skills init` 单独配置，或从 `lhcli` 主菜单进入。
 
 技能启停向导支持多选技能和 agent，默认选择用户级作用域与 Codex；可以切换到当前目录。
@@ -13,6 +13,43 @@
 
 `lhcli tui --accessible` 使用编号和逐项输入，适合屏幕阅读器；也可设置 `ACCESSIBLE=true`。
 确认提示中 `y` 表示是、`n` 表示否。Ctrl+C 或输入结束会退出，不把默认值视为确认。
+
+## 开箱即用
+
+已经配置默认仓库后，新增一个技能只需一个命令：
+
+```bash
+lhcli skills add ~/code/my-skill
+```
+
+命令先导入包含 `SKILL.md` 的目录，再直接进入提交向导：查看变更、填写说明、选择是否推送并确认，无须再执行 `submit`。原目录保留，同名技能不会被覆盖。提交清单仍包含仓库内 `skills/` 和 `agents/` 的全部待提交变更。
+
+`add` 需要终端，非交互调用会在写入前报错。取消提交时已导入的文件保留，可用 `lhcli skills submit` 继续；只想导入或在脚本中使用时，仍可运行 `lhcli skills import <目录>`。
+
+第一次使用，运行 `lhcli skills` 并选择“创建个人仓库”。向导会创建 Git 仓库、初始提交和一份默认指令模板，无须手动执行 `git init`。需要本机已配置 Git 提交身份；签名配置也会沿用。
+
+```bash
+# 非交互创建默认本地仓库
+lhcli skills init --create
+
+# 查看默认仓库位置、远端和工作区状态
+lhcli skills info
+
+# 导入包含 SKILL.md 的单个技能目录，原文件保留
+lhcli skills import ~/code/my-skill
+
+# 直接打开启用、停用向导
+lhcli skills enable
+lhcli skills disable
+```
+
+创建位置默认是 `~/.lhcli/repos/my-skills/`，可用 `--create --path <新目录>` 指定；已有目录不会被覆盖。创建的是本地仓库，工具不会自动创建 GitHub 仓库。关联远端并用 `git push -u origin main` 配置上游后，提交向导可选择推送。
+
+导入操作复制整个技能目录，保留脚本执行权限，拒绝同名技能、符号链接、内部 `.git` 和特殊文件。不自动接管 agent 目录内的已有文件；导入后从菜单选择“启用技能到 agent”。需要修改已导入的技能时，编辑仓库中的副本。
+
+菜单里的“查看技能状态”直接显示用户级状态；带参数的 `lhcli skills list` 仍默认查看当前目录。菜单里的“查看默认仓库和同步状态”可以找到源码位置和 Git 远端。
+
+同一仓库的 `agents/<模板名>/AGENTS.md` 保存项目指令，运行 `lhcli agents` 管理，详见 [AGENTS.md 管理](agents.md)。
 
 ## 准备仓库
 
@@ -48,7 +85,7 @@ lhcli skills init --repo owner/my-skills
 lhcli skills init --repo git@github.com:owner/my-skills.git
 ```
 
-`--repo` 和 `--path` 必须且只能提供一个。克隆目录默认为 `~/.lhcli/repos/my-skills/`，配置保存在 `~/.lhcli/skills.json`。本机绝对路径和链接记录不写进技能仓库。
+登记或克隆时，`--repo` 和 `--path` 必须且只能提供一个；`--create` 可以配合 `--path`，不能配合 `--repo`。克隆目录默认为 `~/.lhcli/repos/my-skills/`，配置保存在 `~/.lhcli/skills.json`。本机绝对路径和链接记录不写进技能仓库。
 
 需要系统安装 Git。私有仓库使用本机已配置的 Git 凭据或 SSH；lhcli 不维护独立的认证配置，也不自动运行 `gh auth login`。Git 操作关闭终端凭据提问；认证失败时，先在终端配置 Git 认证再重试。
 
@@ -118,7 +155,7 @@ lhcli skills update --dry-run
 lhcli skills submit
 ```
 
-向导列出 `skills/` 下新增、修改和删除的文件，随后输入提交说明，选择是否推送，最后确认。
+向导列出 `skills/` 和 `agents/` 下新增、修改和删除的文件，随后输入提交说明，选择是否推送，最后确认。
 这里只展示变更文件列表；需要审查文件内容时，先在编辑器或 Git 中查看差异。
 默认仅创建本地提交，不会推送。其他工作区文件不会被加入本次提交。
 
