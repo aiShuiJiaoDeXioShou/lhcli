@@ -15,6 +15,11 @@ func TestSkillsArguments(t *testing.T) {
 		{"skills", "init", "unexpected"},
 		{"skills", "list", "unexpected"},
 		{"skills", "update", "unexpected"},
+		{"skills", "init", "--create", "--repo", "owner/repo"},
+		{"skills", "import", "--dry-run"},
+		{"skills", "import", "one", "two"},
+		{"skills", "add"},
+		{"skills", "add", "one", "two"},
 	} {
 		root := &cobra.Command{Use: "lhcli", SilenceErrors: true, SilenceUsage: true}
 		root.AddCommand(newSkillsCmd())
@@ -70,9 +75,14 @@ func TestInteractiveCommandsWithPipedIO(t *testing.T) {
 		{[]string{"skills"}, false},
 		{[]string{"tui"}, true},
 		{[]string{"skills", "submit"}, true},
+		{[]string{"skills", "import"}, true},
+		{[]string{"skills", "add", "./my-skill"}, true},
+		{[]string{"skills", "enable"}, true},
+		{[]string{"agents"}, false},
+		{[]string{"agents", "submit"}, true},
 	} {
 		root := &cobra.Command{Use: "lhcli", SilenceErrors: true, SilenceUsage: true}
-		root.AddCommand(newSkillsCmd(), newTUICmd())
+		root.AddCommand(newSkillsCmd(), newTUICmd(), newAgentsCmd())
 		var out bytes.Buffer
 		root.SetIn(&bytes.Buffer{})
 		root.SetOut(&out)
@@ -81,5 +91,21 @@ func TestInteractiveCommandsWithPipedIO(t *testing.T) {
 		if (err != nil) != test.wantError {
 			t.Fatalf("非终端行为错误 %v: %v", test.args, err)
 		}
+	}
+}
+
+func TestSkillsAddRequiresTerminalBeforeReadingSource(t *testing.T) {
+	root := &cobra.Command{Use: "lhcli", SilenceErrors: true, SilenceUsage: true}
+	root.AddCommand(newSkillsCmd())
+	var out bytes.Buffer
+	root.SetIn(&bytes.Buffer{})
+	root.SetOut(&out)
+	root.SetArgs([]string{"skills", "add", "不存在的技能目录"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "需要终端") {
+		t.Fatalf("非终端调用应在读取配置或源目录前失败: %v", err)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("非终端调用不应进入导入或提交: %s", out.String())
 	}
 }

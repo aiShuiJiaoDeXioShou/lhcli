@@ -111,7 +111,7 @@ func (m *Manager) lock() (func(), error) {
 
 func requireRepo(s state) error {
 	if s.Repo == "" {
-		return fmt.Errorf("尚未配置技能仓库，请先运行 lhcli skills init --repo <仓库> 或 --path <本地仓库>")
+		return fmt.Errorf("尚未配置个人仓库，请运行 lhcli skills init 打开向导，或 lhcli skills init --create 创建默认仓库")
 	}
 	return nil
 }

@@ -21,7 +21,7 @@ type SubmitPlan struct {
 	digest    string
 }
 
-// PlanSubmit 只读检查 skills/ 下的变更，不触碰已有暂存内容。
+// PlanSubmit 只读检查 skills/ 和 agents/ 下的变更，不触碰已有暂存内容。
 func (m *Manager) PlanSubmit(ctx context.Context) (SubmitPlan, error) {
 	var plan SubmitPlan
 	s, err := m.load()
@@ -63,11 +63,14 @@ func (m *Manager) PlanSubmit(ctx context.Context) (SubmitPlan, error) {
 	if _, err := discover(s.Repo); err != nil {
 		return plan, err
 	}
-	status, err := gitOutput(ctx, s.Repo, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--no-renames", "--", "skills/")
+	if err := validateManagedTrees(s.Repo); err != nil {
+		return plan, err
+	}
+	status, err := gitOutput(ctx, s.Repo, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--no-renames", "--", "skills/", "agents/")
 	if err != nil {
 		return plan, err
 	}
-	diff, err := gitOutput(ctx, s.Repo, "diff", "--binary", "--no-ext-diff", "--no-textconv", "--", "skills/")
+	diff, err := gitOutput(ctx, s.Repo, "diff", "--binary", "--no-ext-diff", "--no-textconv", "--", "skills/", "agents/")
 	if err != nil {
 		return plan, err
 	}
@@ -84,7 +87,7 @@ func (m *Manager) PlanSubmit(ctx context.Context) (SubmitPlan, error) {
 		if entry == "" {
 			continue
 		}
-		if len(entry) < 4 || entry[2] != ' ' || !strings.HasPrefix(entry[3:], "skills/") {
+		if len(entry) < 4 || entry[2] != ' ' || (!strings.HasPrefix(entry[3:], "skills/") && !strings.HasPrefix(entry[3:], "agents/")) {
 			return plan, fmt.Errorf("无法识别 Git 变更条目")
 		}
 		path := entry[3:]
@@ -128,7 +131,7 @@ func (m *Manager) PlanSubmit(ctx context.Context) (SubmitPlan, error) {
 	return plan, nil
 }
 
-// Submit 仅提交预览过的技能文件，可选择把当前分支推送到其上游。
+// Submit 仅提交预览过的技能和指令模板文件，可选择把当前分支推送到其上游。
 func (m *Manager) Submit(ctx context.Context, plan SubmitPlan, message string, push bool, out io.Writer) error {
 	unlock, err := m.lock()
 	if err != nil {
@@ -166,11 +169,11 @@ func (m *Manager) Submit(ctx context.Context, plan SubmitPlan, message string, p
 		}
 		args = append([]string{"commit", "--only", "-m", message, "--"}, paths...)
 		if _, err := git(ctx, current.Repo, args...); err != nil {
-			return fmt.Errorf("提交失败，技能变更保留在暂存区，请用 Git 检查处理: %w", err)
+			return fmt.Errorf("提交失败，技能和指令变更保留在暂存区，请用 Git 检查处理: %w", err)
 		}
-		fmt.Fprintln(out, "技能变更已提交到本地仓库")
+		fmt.Fprintln(out, "技能和指令变更已提交到本地仓库")
 	} else {
-		fmt.Fprintln(out, "没有新的技能文件变更")
+		fmt.Fprintln(out, "没有新的技能或指令文件变更")
 	}
 	if push {
 		if _, err := git(ctx, current.Repo, "push", "--no-follow-tags", "--", current.Remote, "HEAD:"+current.RemoteRef); err != nil {

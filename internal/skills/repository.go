@@ -224,7 +224,7 @@ func (m *Manager) Update(ctx context.Context, check, dryRun bool, out io.Writer)
 }
 
 func validateRevision(ctx context.Context, s state, revision string) error {
-	output, err := git(ctx, s.Repo, "ls-tree", "-r", "-z", revision, "--", "skills")
+	output, err := git(ctx, s.Repo, "ls-tree", "-r", "-z", revision, "--", "skills", "agents")
 	if err != nil {
 		return err
 	}
@@ -237,17 +237,19 @@ func validateRevision(ctx context.Context, s state, revision string) error {
 		fields := strings.Fields(metadata)
 		parts := strings.Split(path, "/")
 		if !ok || len(fields) != 3 || (fields[0] != "100644" && fields[0] != "100755") {
-			return fmt.Errorf("上游技能包含符号链接或特殊条目，拒绝更新: %s", path)
+			return fmt.Errorf("上游技能或指令包含符号链接或特殊条目，拒绝更新: %s", path)
 		}
-		if len(parts) == 3 && parts[2] == "SKILL.md" {
+		if len(parts) == 3 && ((parts[0] == "skills" && parts[2] == "SKILL.md") || (parts[0] == "agents" && parts[2] == "AGENTS.md")) {
 			body, err := git(ctx, s.Repo, "cat-file", "blob", fields[2])
 			if err != nil {
 				return err
 			}
 			if !validName(parts[1]) || body == "" {
-				return fmt.Errorf("上游技能名称或 SKILL.md 无效: %s", path)
+				return fmt.Errorf("上游技能或指令名称、内容无效: %s", path)
 			}
-			names[parts[1]] = true
+			if parts[0] == "skills" {
+				names[parts[1]] = true
+			}
 		}
 	}
 	for _, b := range s.Links {
